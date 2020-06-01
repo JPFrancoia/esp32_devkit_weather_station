@@ -40,3 +40,10 @@ posting json.
 headers = {'Content-Type': 'application/json'}
 r = urequests.post("http://192.168.0.101:5000/measurements/provide", json={"measurement": 1}, headers=headers)
 ```
+
+## TFT screen
+
+Python driver for the screen comes from: https://github.com/jeffmer/micropython-ili9341
+
+TFT screen is 2.2 inch TFT Display 240*320 pixels - ILI9341: https://www.tinytronics.nl/shop/en/display/tft/2.2-inch-tft-display-240*320-pixels-ili9341
+

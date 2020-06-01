@@ -5,37 +5,56 @@ from umqtt.robust import MQTTClient
 
 import config
 import pics
-from writer import Writer, NotionalDisplay
-import freesans20
+import ili934
+import tt32
 
 
 i2c = machine.I2C(scl=machine.Pin(config.SCL_PIN), sda=machine.Pin(config.SDA_PIN))
 mqtt_client = MQTTClient("umqtt_client", config.MQTT_SERVER)
 bme, max44009 = config.setup_sensors(i2c)
+light_sensor = config.setup_sensors(i2c)
 screen = config.setup_screen()
 
-config.do_connect()
+screen.set_color(ili934.color565(255, 165, 0), ili934.color565(255, 255, 255))
+screen.erase()
+screen.set_font(tt32)
 
-buf = bytearray(config.SCREEN_W * config.SCREEN_H // 8)
-fb = framebuf.FrameBuffer(buf, config.SCREEN_W, config.SCREEN_H, framebuf.MONO_HLSB)
+# Create an array to store the bytes for the pictures.
+# We'll re-use it for all pictures. The pictures are 60x60 but an array of 60x60
+# strangely doesn't work
+buf = bytearray(120 * 120 // 8)
 
-black = 1
-white = 0
+# Needed to invert SCREEN_H and SCREEN_W to use the screen in portrait mode
+# Size should match the buffer above
+fb = framebuf.FrameBuffer(buf, 120, 120, framebuf.MONO_HLSB)
 
-fb.fill(white)
-fb.blit(pics.fb_thermometer, 0, 2)
-fb.blit(pics.fb_humidity, 0, 62)
-fb.blit(pics.fb_pressure, 0, 122)
-fb.blit(pics.fb_light, 0, 182)
+# Turn ON the backlight of the screen
+p0 = machine.Pin(2, machine.Pin.OUT)
+p0.value(1)
 
-screen.display_frame(buf)
+# SCREEN_H and SCREEN_W are inverted to use the screen in portrait mode, for all
+# the blittings belows
 
+screen.set_color(ili934.color565(255, 165, 0), ili934.color565(255, 255, 255))
+fb.blit(pics.fb_thermometer, 0, 0)
+screen.blit(fb, 0, 16, 60, 60)
 
-my_display = NotionalDisplay(176, 264, buf)
-writer = Writer(my_display, freesans20)
+screen.set_color(ili934.color565(65, 105, 225), ili934.color565(255, 255, 255))
+fb.blit(pics.fb_humidity, 0, 0)
+screen.blit(fb, 0, 92, 60, 60)
+
+screen.set_color(ili934.color565(119, 136, 153), ili934.color565(255, 255, 255))
+fb.blit(pics.fb_pressure, 0, 0)
+screen.blit(fb, 0, 168, 60, 60)
+
+screen.set_color(ili934.color565(255, 215, 0), ili934.color565(255, 255, 255))
+fb.blit(pics.fb_light, 0, 0)
+screen.blit(fb, 0, 244, 60, 60)
 
 
 while True:
+
+    config.do_connect()
 
     for i in range(0, 3):
         try:
@@ -72,25 +91,28 @@ while True:
 
     mqtt_client.disconnect()
 
-    fb.fill(white)
-    fb.blit(pics.fb_thermometer, 0, 2)
-    fb.blit(pics.fb_humidity, 0, 62)
-    fb.blit(pics.fb_pressure, 0, 122)
-    fb.blit(pics.fb_light, 0, 182)
+    # Temperature displayed in orange. Set here before erasing the measurements area
+    screen.set_color(ili934.color565(255, 165, 0), ili934.color565(255, 255, 255))
 
-    Writer.set_textpos(my_display, 25, 70)
-    writer.printstring("{} C".format(round(float(temperature), 2)))
+    # Fill a rectangle only on the measurements area. This is equivalent to
+    # screen.erase(), but we only erase the measurements area of the screen.
+    screen.fill_rectangle(90, 0, config.SCREEN_H - 90, config.SCREEN_W)
 
-    Writer.set_textpos(my_display, 85, 65)
-    writer.printstring("{} hPa".format(round(float(pressure), 2)))
+    screen.set_pos(90, 30)
+    screen.print("{} C".format(round(float(temperature), 2)))
 
-    Writer.set_textpos(my_display, 145, 70)
-    writer.printstring("{} %".format(round(float(humidity), 2)))
+    screen.set_color(ili934.color565(65, 105, 225), ili934.color565(255, 255, 255))
+    screen.set_pos(90, 110)
+    screen.print("{} %".format(round(float(humidity), 2)))
 
-    Writer.set_textpos(my_display, 205, 70)
-    writer.printstring("{} Lux".format(round(float(illuminance), 2)))
+    screen.set_color(ili934.color565(119, 136, 153), ili934.color565(255, 255, 255))
+    screen.set_pos(90, 185)
+    screen.print("{} hPa".format(round(float(pressure), 2)))
 
-    my_display.show()
-    screen.display_frame(buf)
+    screen.set_color(ili934.color565(255, 215, 0), ili934.color565(255, 255, 255))
+    screen.set_pos(90, 260)
+    screen.print("{} Lux".format(round(float(illuminance), 2)))
 
-    time.sleep(10)
+    config.disconnect()
+
+    time.sleep(60)

@@ -4,7 +4,7 @@ from machine import Pin, SPI
 
 import bme280
 import max44009
-import epaper2in7
+from ili934 import ILI9341
 
 
 ESSID = "your_essid"
@@ -19,11 +19,13 @@ TOPIC_ILLUMINANCE = "home/weather_station/illuminance"
 SDA_PIN = 27
 SCL_PIN = 14
 
-SCREEN_W = 176
-SCREEN_H = 264
+SCREEN_W = 320
+SCREEN_H = 240
 
 
 def do_connect():
+    network.WLAN(0).active(1)
+    network.WLAN(1).active(1)
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
 
@@ -35,6 +37,11 @@ def do_connect():
         time.sleep(5)
 
     print("network config:", wlan.ifconfig())
+
+
+def disconnect():
+    network.WLAN(0).active(0)
+    network.WLAN(1).active(0)
 
 
 def mqtt_is_connected(mqtt_client):
@@ -66,18 +73,23 @@ def setup_sensors(i2c):
 
 
 def setup_screen():
-    # SPIV on ESP32
-    sck = Pin(18)
-    miso = Pin(19)  # Not physically connected
-    mosi = Pin(23)
-    dc = Pin(22)
-    cs = Pin(5)
-    rst = Pin(21)
-    busy = Pin(4)
-    spi = SPI(2, baudrate=100_000, polarity=0, phase=0, sck=sck, mosi=mosi, miso=miso)
+    mosi = Pin(23)  # blue
+    dc = Pin(22)  # green
+    rst = Pin(21)  # white
+    miso = Pin(19)  # light purple
+    sck = Pin(18)  # CLK, yellow
+    cs = Pin(5)  # orange
 
-    screen = epaper2in7.EPD(spi, cs, dc, rst, busy)
-    screen.init()
+    spi = SPI(2, baudrate=40000000, miso=miso, mosi=mosi, sck=sck)
+
+    screen = ILI9341(
+        spi,
+        cs=cs,
+        dc=dc,
+        rst=rst,
+        w=320,
+        h=240,
+        r=2)
 
     print("Screen ready")
 
