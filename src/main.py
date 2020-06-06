@@ -29,8 +29,8 @@ buf = bytearray(120 * 120 // 8)
 fb = framebuf.FrameBuffer(buf, 120, 120, framebuf.MONO_HLSB)
 
 # Turn ON the backlight of the screen
-p0 = machine.Pin(2, machine.Pin.OUT)
-p0.value(1)
+backlight = machine.Pin(15, machine.Pin.OUT)
+backlight.on()
 
 # SCREEN_H and SCREEN_W are inverted to use the screen in portrait mode, for all
 # the blittings belows
@@ -107,7 +107,7 @@ while True:
 
     screen.set_color(ili934.color565(119, 136, 153), ili934.color565(255, 255, 255))
     screen.set_pos(90, 185)
-    screen.print("{} hPa".format(round(float(pressure), 2)))
+    screen.print("{} hPa".format(int(round(float(pressure)))))
 
     screen.set_color(ili934.color565(255, 215, 0), ili934.color565(255, 255, 255))
     screen.set_pos(90, 260)
@@ -115,4 +115,12 @@ while True:
 
     config.disconnect()
 
-    time.sleep(60)
+    # Don't turn the screen ON if illuminance is too low: screen is off at night
+    if max44009.illuminance_lux > 7:
+        backlight.on()
+        time.sleep(5)
+
+    print("Turning screen off")
+    backlight.off()
+
+    time.sleep(30)
