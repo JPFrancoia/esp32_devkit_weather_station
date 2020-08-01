@@ -46,10 +46,12 @@ def disconnect():
 
 def mqtt_is_connected(mqtt_client):
     try:
+        # Required to properly check the MQTT server is reachable
+        # See: https://forum.micropython.org/viewtopic.php?f=15&t=7334
         mqtt_client.ping()
         mqtt_client.ping()
-    except:
-        print("Lost connection to mqtt broker...")
+    except Exception as e:
+        print("Lost connection to mqtt broker: {}".format(e))
         return False
     else:
         return True
