@@ -1,3 +1,6 @@
+You can find the blog post related to this repo [here](https://jpfrancoia.github.io/2020/08/01/home-made-weather-station.html)
+
+
 ## Drivers:
 
 ### MAX44009 light sensor
